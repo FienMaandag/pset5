@@ -105,6 +105,7 @@ class MasterViewController: UITableViewController {
             
             do {
                 try database?.run(removeList.delete())
+                try database?.run(removeTodos.delete())
             }
             catch {
                 // error handeling

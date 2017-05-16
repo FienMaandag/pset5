@@ -28,12 +28,7 @@ class DetailViewController: UIViewController, UITableViewDataSource, UITableView
     override func viewDidLoad() {
         super.viewDidLoad()
         setUpDatabase()
-        print("6")
         loadData()
-        
-        
-        print("7")
-        print("8")
     }
     
     override func didReceiveMemoryWarning() {
