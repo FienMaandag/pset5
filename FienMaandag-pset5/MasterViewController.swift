@@ -101,6 +101,7 @@ class MasterViewController: UITableViewController {
         if editingStyle == .delete {
             let deleteList = todoLists[indexPath.row]
             let removeList = list.filter(idList == deleteList.idList)
+            let removeTodos = DetailViewController.todoList.filter(DetailViewController.listId == deleteList.idList)
             
             do {
                 try database?.run(removeList.delete())

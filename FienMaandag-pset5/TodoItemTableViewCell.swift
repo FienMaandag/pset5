@@ -12,6 +12,7 @@ class TodoItemTableViewCell: UITableViewCell {
 
 
     @IBOutlet weak var todoLabel: UILabel!
+    @IBOutlet weak var doneSwitch: UISwitch!
     
     override func awakeFromNib() {
         super.awakeFromNib()

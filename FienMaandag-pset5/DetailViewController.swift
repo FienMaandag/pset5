@@ -12,17 +12,16 @@ import SQLite
 class DetailViewController: UIViewController, UITableViewDataSource, UITableViewDelegate{
     
     private var database: Connection?
-    let todoList = Table("todoList")
+    static let todoList = Table("todoList")
     let idTodo = Expression<Int64>("idTodo")
-    let listId = Expression<Int64>("listId")
+    static let listId = Expression<Int64>("listId")
     let todo = Expression<String>("todo")
     var completed = Expression<Bool>("completed")
     
-    var selectedListId: Int64 = 0
+    var selectedListId: Int64?
     var selectedListName: String = ""
     var itemList = [(idTodo: Int64, listId: Int64, todo: String, completed: Bool)]()
 
-    @IBOutlet weak var detailDescriptionLabel: UILabel!
     @IBOutlet weak var tableView: UITableView!
     @IBOutlet weak var newTodo: UITextField!
     
@@ -31,9 +30,9 @@ class DetailViewController: UIViewController, UITableViewDataSource, UITableView
         setUpDatabase()
         print("6")
         loadData()
+        
+        
         print("7")
-        // can i delete this?
-        configureView()
         print("8")
     }
     
@@ -47,6 +46,27 @@ class DetailViewController: UIViewController, UITableViewDataSource, UITableView
         tableView.reloadData()
     }
     
+    @IBAction func doneSwitch(_ sender: UISwitch) {
+        let indexPath = IndexPath(row: sender.tag, section: 0)
+        
+        guard let cell = self.tableView.cellForRow(at: indexPath) as? TodoItemTableViewCell else {
+            return
+        }
+        
+        // update database
+        let updateTodo = itemList[indexPath.row]
+        let row = DetailViewController.todoList.filter(idTodo == updateTodo.idTodo)
+        
+        let value = sender.isOn
+        
+        do {
+            cell.doneSwitch.setOn(value, animated: true)
+            try database?.run(row.update(completed <- value))
+        } catch{
+            print("error1")
+        }
+    }
+    
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         return itemList.count
     }
@@ -56,6 +76,8 @@ class DetailViewController: UIViewController, UITableViewDataSource, UITableView
         let cell = tableView.dequeueReusableCell(withIdentifier: "todoCell", for: indexPath) as! TodoItemTableViewCell
         
         cell.todoLabel.text = itemList[indexPath.row].todo
+        let value = itemList[indexPath.row].completed
+        cell.doneSwitch.setOn(value, animated: true)
         
         return cell
     }
@@ -63,7 +85,7 @@ class DetailViewController: UIViewController, UITableViewDataSource, UITableView
     func tableView(_ tableView: UITableView, commit editingStyle: UITableViewCellEditingStyle, forRowAt indexPath: IndexPath) {
         if editingStyle == .delete {
             let deleteList = itemList[indexPath.row]
-            let removeList = todoList.filter(idTodo == deleteList.idTodo)
+            let removeList = DetailViewController.todoList.filter(idTodo == deleteList.idTodo)
             
             do {
                 try database?.run(removeList.delete())
@@ -96,9 +118,9 @@ class DetailViewController: UIViewController, UITableViewDataSource, UITableView
     
     func createTable() {
         do {
-            try database!.run(todoList.create(ifNotExists: true){t in
+            try database!.run(DetailViewController.todoList.create(ifNotExists: true){t in
                 t.column(idTodo, primaryKey: .autoincrement)
-                t.column(listId)
+                t.column(DetailViewController.listId)
                 t.column(todo)
                 t.column(completed)
             })
@@ -111,10 +133,10 @@ class DetailViewController: UIViewController, UITableViewDataSource, UITableView
     
     func loadData() {
         do{
-            for todos in try database!.prepare(todoList.filter(listId == selectedListId)){
+            for todos in try database!.prepare(DetailViewController.todoList.filter(DetailViewController.listId == selectedListId!)){
                 itemList.append((
                     idTodo: todos[idTodo],
-                    listId: todos[listId],
+                    listId: todos[DetailViewController.listId],
                     todo: todos[todo],
                     completed: todos[completed]
                     ))
@@ -126,16 +148,16 @@ class DetailViewController: UIViewController, UITableViewDataSource, UITableView
     }
     
     func addTodo(){
-        let insert = todoList.insert(listId <- selectedListId, todo <- newTodo.text!, completed <- false)
+        let insert = DetailViewController.todoList.insert(DetailViewController.listId <- selectedListId!, todo <- newTodo.text!, completed <- false)
         
         do {
             let rowId = try database!.run(insert)
             
             do {
-                for todos in try database!.prepare(todoList.filter(idTodo == rowId)){
+                for todos in try database!.prepare(DetailViewController.todoList.filter(idTodo == rowId)){
                     itemList.append((
                         idTodo: todos[idTodo],
-                        listId: todos[listId],
+                        listId: todos[DetailViewController.listId],
                         todo: todos[todo],
                         completed: todos[completed]
                     ))
@@ -149,24 +171,6 @@ class DetailViewController: UIViewController, UITableViewDataSource, UITableView
         } catch{
             // error handeling
             print("Error creating to do: \(error)")
-        }
-    }
-
-    // can i delete this?
-    func configureView() {
-        // Update the user interface for the detail item.
-        if let detail = detailItem {
-            if let label = detailDescriptionLabel {
-                label.text = detail.description
-            }
-        }
-    }
-
-    // can i delete this?
-    var detailItem: String? {
-        didSet {
-            // Update the view.
-            configureView()
         }
     }
 
